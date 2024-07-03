@@ -7,14 +7,30 @@
 */
 
 #include <string>
+#include <cstdarg>
+#include <stdexcept>
 #include "config_file.h"
 #include "vreg_parser.h"
 #include "amap_parser.h"
 using std::string;
 using std::map;
 
-map<uint64_t, addr_entry_t> connection;
+struct src_entry_t
+{
+    string name;
+    string filename;
+    string prefix;
+};
+
+// Maps a connection name to a connection entry
+map<string, connection_t> connection;
+
+// Maps a connection name to a source file and prefix
+map<string, src_entry_t> src_map;
+
 string input_file;
+string config_file = "xlate_vreg.conf";
+
 bool   show_names;
 
 void execute();
@@ -42,14 +58,50 @@ int main(int argc, const char** argv)
 
 
 //=============================================================================
+// throwRuntime() - Throws a runtime exception
+//=============================================================================
+static void throwRuntime(const char* fmt, ...)
+{
+    char buffer[1024];
+    va_list ap;
+    va_start(ap, fmt);
+    vsprintf(buffer, fmt, ap);
+    va_end(ap);
+
+    throw std::runtime_error(buffer);
+}
+//=============================================================================
+
+
+
+//=============================================================================
+// reorder_connections() - Returns a copy of the "connection" map, reordered
+//                         by AXI address
+//=============================================================================
+map<uint64_t, connection_t> reorder_connections()
+{
+    map<uint64_t, connection_t> result;
+
+    for (auto& c : connection)
+    {
+        result[c.second.address] = c.second;
+    }
+
+    return result;
+}
+//=============================================================================
+
+
+//=============================================================================
 // show_connection_names() - Displays a list of connection names and their 
 //                           AXI addresses
 //=============================================================================
 void show_connection_names()
 {
-    for (auto& e : connection)
+    auto reordered = reorder_connections();
+    for (auto& e : reordered)
     {
-        printf("0x%016lx  %s\n", e.first, e.second.name.c_str());
+        printf("0x%016lx  %s\n", e.second.address, e.second.name.c_str());
     }
 }
 //=============================================================================
@@ -61,7 +113,7 @@ void show_connection_names()
 void show_help()
 {
     printf("xlate_vreg %s\n", REVISION);
-    printf("usage: xlate_vreg [-names] <filename>\n");
+    printf("usage: xlate_vreg [-names] [-config <config_file>] <filename>\n");
     exit(1);
 }
 //=============================================================================
@@ -87,6 +139,13 @@ void parse_command_line(const char** argv)
             continue;
         }
 
+        // Is the user supplying the name of a config file?
+        if (token == "-config" && argv[idx+1])
+        {
+            config_file = argv[++idx];
+            continue;
+        }
+
         // If this is an unknown command line switch, complain
         if (argv[idx][0] == '-')
             show_help();
@@ -106,12 +165,74 @@ void parse_command_line(const char** argv)
 //=============================================================================
 void read_config_file(string filename)
 {
-    CConfigFile config;
+    src_entry_t   entry;
+    CConfigFile   config;
+    CConfigScript script;
 
-    config.read(filename, true);
+    // If errors occur, throw exceptions
+    config.throw_on_fail(true);
+
+    // Open the configuration file
+    if (!config.read(filename, false))
+    {
+        throwRuntime("can't open %s", filename.c_str());
+    }
+
+    // Fetch the "connections" script
+    config.get("connections", &script);
+
+    // Loop through each line of that script, and add an entry
+    // to the "src_map"
+    while (script.get_next_line())
+    {
+        entry.name     = script.get_next_token();
+        entry.filename = script.get_next_token();
+        entry.prefix   = script.get_next_token();
+        src_map[entry.name] = entry;
+    }
 
 }
 //=============================================================================
+
+
+//=============================================================================
+// merge_maps() - Fill in missing fields in "connection" from the matching 
+//                connection names in "src_map"
+//=============================================================================
+void merge_maps()
+{
+
+    // Loop through every connection in the Xilinx project
+    for (auto& c : connection)
+    {
+        // Fetch the connection name
+        string connection_name = c.second.name;
+
+        // Does this connection exist in the src_map?
+        auto it = src_map.find(connection_name);
+
+        // If this connection isn't in the src_map, complain
+        if (it == src_map.end())
+        {
+            throwRuntime
+            (   "'%s' not defined in %s",
+                connection_name.c_str(),
+                config_file.c_str()
+            );
+        }
+
+        // Get a handy reference to the entry that corresponds to this name
+        auto& entry = it->second;
+
+        // Fill in the fields in "connection" with their corresponding
+        // values from "src_map"        
+        c.second.filename = entry.filename;
+        c.second.prefix   = entry.prefix;
+
+    }
+}
+//=============================================================================
+
 
 //=============================================================================
 // execute() - Performs most of the work of this program
@@ -129,7 +250,12 @@ void execute()
     }
 
     // Read our configuration file
-    read_config_file("xlate_vreg.conf");
+    read_config_file(config_file);
+
+    // Fill in fields in the "addr_map" from matching names in the "src_map"
+    merge_maps();
+
+    printf("Done\n"); exit(1);
     
     const char* fn = "input.v";
     FILE* ifile = fopen(fn, "r");

@@ -143,10 +143,10 @@ static string get_key_value(const char* start)
 // parse_address_map() - Parses the output of "parse_xbd" to build a list of
 //                       AXI connection names and their AXI addresses
 //=============================================================================
-void parse_address_map(string filename, map<uint64_t, addr_entry_t>* addrmap)
+void parse_address_map(string filename, map<string, connection_t>* addrmap)
 {
     char buffer[10000];
-    addr_entry_t entry;
+    connection_t entry;
     
     // Open the input file and complain if we can't
     FILE* ifile = fopen(filename.c_str(), "r");
@@ -185,7 +185,7 @@ void parse_address_map(string filename, map<uint64_t, addr_entry_t>* addrmap)
         if (key_type == "offset")
         {
             entry.address = strtoull(key_value.c_str(), nullptr, 0);
-            (*addrmap)[entry.address] = entry;
+            (*addrmap)[entry.name] = entry;
         }
     }
 

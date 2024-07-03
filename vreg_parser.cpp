@@ -316,7 +316,7 @@ static uint32_t parse_localparam_value(const char* in)
 //=============================================================================
 // make_reg_name() - Make a register name from a localparam name
 //=============================================================================
-string make_reg_name(string lparam, string prefix)
+static string make_reg_name(string lparam, string prefix)
 {
     // If the localparam name doesn't start with "REG_", its not a register
     if (lparam.substr(0, 4) != "REG_") return "";

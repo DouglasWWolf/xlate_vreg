@@ -353,8 +353,17 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
         // Remove the CR or LF from the end of the line
         chomp(buffer);
 
+        // Skip past any leading whitespace
+        const char* in = skip_whitespace(buffer);
+
+        // Skip any line that is blank, a comment, /* or */
+        if (*in == 0)                     continue;
+        if (in[0] == '/' && in[1] == '/') continue;
+        if (in[0] == '/' && in[1] == '*') continue;
+        if (in[0] == '*' && in[1] == '/') continue;
+
         // Fetch the first token on the line
-        const char* in = get_next_token(buffer, &entry.key);
+        in = get_next_token(in, &entry.key);
         
         // Are we defining a new register?
         if (entry.key == "@register")

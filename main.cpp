@@ -281,7 +281,7 @@ void write_output_header(FILE* ofile)
 //=============================================================================
 // write_output_footer() - Writes the final lines of the output file
 //=============================================================================
-void write_output_header(FILE* ofile)
+void write_output_footer(FILE* ofile)
 {
     fprintf(ofile, "\n#endif\n");
 }

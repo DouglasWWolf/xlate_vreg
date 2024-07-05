@@ -194,7 +194,7 @@ static void write_register_documentation(FILE* ofile, string register_name)
 
         if (e.key == "@register")
         {
-            printf("// Description: %s\n", e.desc.c_str());
+            fprintf(ofile,  "// Description: %s\n", e.desc.c_str());
             continue;
         }
 
@@ -205,12 +205,13 @@ static void write_register_documentation(FILE* ofile, string register_name)
 
             if (field_count++ == 0)
             {
-                printf("// Fields:\n");
-                printf("//     NAME                           WID   POS TYPE RESET       DESCRIPTION\n");
+                fprintf(ofile, "// Fields:\n");
+                fprintf(ofile, "//     NAME                           WID   POS TYPE RESET       DESCRIPTION\n");
             }            
 
-            printf
+            fprintf
             (
+                ofile,
                 "//     %-30s %-3u %5s %-4s %-11s %s\n",
                 e.name.c_str(),
                 width,
@@ -225,8 +226,8 @@ static void write_register_documentation(FILE* ofile, string register_name)
 
         if (e.key == "@fdesc")
         {
-            printf("//                                         ");
-            printf("                      %s\n", e.desc.c_str());
+            fprintf(ofile, "//                                         ");
+            fprintf(ofile, "                      %s\n", e.desc.c_str());
             continue;            
         }
     }
@@ -242,7 +243,7 @@ static void write_register_documentation(FILE* ofile, string register_name)
 //=============================================================================
 static void write_c_constants(FILE* ofile, string reg_name, uint32_t reg_addr)
 {
-    printf("#define %-60s 0x%016xULL\n", reg_name.c_str(), reg_addr);
+    fprintf(ofile, "#define %-60s 0x%016xULL\n", reg_name.c_str(), reg_addr);
 
     // Loop through every entry in the defintion
     for (auto& e : definition)
@@ -253,12 +254,12 @@ static void write_c_constants(FILE* ofile, string reg_name, uint32_t reg_addr)
             uint32_t pos   = decode_int(e.pos);
             uint32_t spec  = (width << 24) | (pos << 16);
             string   field = reg_name + "_" + e.name;
-            printf("#define %-60s 0x%08x%08xULL\n", field.c_str(), spec, reg_addr);
+            fprintf(ofile, "#define %-60s 0x%08x%08xULL\n", field.c_str(), spec, reg_addr);
         }
     }
 
     // Leave a couple of blank lines after every set of constants
-    printf("\n\n");
+    fprintf(ofile, "\n\n");
 }
 //=============================================================================
 
@@ -352,6 +353,7 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
         // Remove the CR or LF from the end of the line
         chomp(buffer);
 
+        // Fetch the first token on the line
         const char* in = get_next_token(buffer, &entry.key);
         
         // Are we defining a new register?
@@ -385,6 +387,7 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
             continue;
         }
 
+
         // Is it time to output some documentation and definitions?
         if (entry.key == "localparam" && definition.size())
         {
@@ -392,6 +395,7 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
             uint32_t lparam_value = parse_localparam_value(in);
             string   reg_name = make_reg_name(lparam_name, prefix);
             uint32_t reg_addr = base_addr + (lparam_value * 4);
+ 
             if (!reg_name.empty())
             {
                 write_register_documentation(ofile, reg_name);

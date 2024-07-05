@@ -54,6 +54,9 @@ int main(int argc, const char** argv)
         fprintf(stderr, "xlate_vreg: %s\n", e.what());
         exit(1);
     }
+
+    // Tell the OS that all is well
+    return 0;
 };
 //=============================================================================
 
@@ -276,6 +279,16 @@ void write_output_header(FILE* ofile)
 
 
 //=============================================================================
+// write_output_footer() - Writes the final lines of the output file
+//=============================================================================
+void write_output_header(FILE* ofile)
+{
+    fprintf(ofile, "\n#endif\n");
+}
+//=============================================================================
+
+
+//=============================================================================
 // write_registers() - Writes the register definitions for a given connection
 //=============================================================================
 void write_registers(connection_t& conn, FILE* ofile)
@@ -329,9 +342,16 @@ void execute()
     // Sort the connection list according to AXI address
     auto reordered = reorder_connections();
 
+    // Parse and write the register definitions for every connection
     for (auto& entry : reordered)
     {
         write_registers(entry.second, ofile);
     }
+
+    // Output the footer and the end of the output file
+    write_output_footer(ofile);
+
+    // We're done with the output file, flush it to disk
+    if (ofile != stdout) fclose(ofile);
 }
 //=============================================================================

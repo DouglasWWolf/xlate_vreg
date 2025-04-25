@@ -169,7 +169,7 @@ static string pos_string(uint32_t pos, uint32_t width)
 {
     char buffer[100];
     if (width < 2)
-        sprintf(buffer, "%u", width);
+        sprintf(buffer, "%u", pos);
     else
         sprintf(buffer, "%02u:%02u", pos+width-1, pos);
     return buffer;
@@ -239,7 +239,7 @@ static void write_register_documentation(FILE* ofile, string register_name)
 
 
 //=============================================================================
-// write_c_constants() - Output the #define statements that C/C+ require
+// write_c_constants() - Output the #define statements that C/C++ require
 //=============================================================================
 static void write_c_constants(FILE* ofile, string reg_name, uint32_t reg_addr)
 {

@@ -198,6 +198,13 @@ static void write_register_documentation(FILE* ofile, string register_name)
             continue;
         }
 
+        if (e.key == "@rdesc")
+        {
+            fprintf(ofile, "//                                         ");
+            fprintf(ofile, "                      %s\n", e.desc.c_str());
+            continue;            
+        }
+
         if (e.key == "@field")
         {
             uint32_t width = decode_int(e.width);
@@ -230,6 +237,7 @@ static void write_register_documentation(FILE* ofile, string register_name)
             fprintf(ofile, "                      %s\n", e.desc.c_str());
             continue;            
         }
+
     }
 
     // Leave a blank line at the end to visually offset it
@@ -375,8 +383,8 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
         }
 
 
-        // Are we adding a comment line to a field description?
-        if (entry.key == "@fdesc")
+        // Are we adding a comment line to a register or field description?
+        if (entry.key == "@fdesc" || entry.key == "@rdesc")
         {
             entry.desc = remaining_text(in);
             definition.push_back(entry);

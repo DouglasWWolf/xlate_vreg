@@ -1,10 +1,18 @@
-
-#define REVISION "1.0"
-
 /*
     This program generates a C/C++ header file from a collection of register
     definitions in Verilog/SystemVerilog source files
 */
+
+
+/*
+
+Date        Rev  Who  Description
+-------------------------------------------------------------------------------
+25-Apr-25   1.1  DWW  Added miscellaneous features pre-release
+
+*/
+#define REVISION "1.1"
+
 
 #include <string>
 #include <cstdarg>

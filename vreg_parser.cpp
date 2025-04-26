@@ -200,8 +200,7 @@ static void write_register_documentation(FILE* ofile, string register_name)
 
         if (e.key == "@rdesc")
         {
-            fprintf(ofile, "//                                         ");
-            fprintf(ofile, "                      %s\n", e.desc.c_str());
+            fprintf(ofile, "//              %s\n", e.desc.c_str());
             continue;            
         }
 

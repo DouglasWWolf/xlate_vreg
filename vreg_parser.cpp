@@ -392,6 +392,7 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
     entry_t entry;
     char    buffer[1000];
     int     register_index = -1;
+    string  rname;
 
     // Loop through each line of the input
     while (fgets(buffer, sizeof buffer, ifile))
@@ -417,10 +418,18 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
         // Are we defining a new register?
         if (entry.key == "@register")
         {
+            rname.clear();
             definition.clear();
             entry.desc = remaining_text(in);
             definition.push_back(entry);
             register_index = definition.size() - 1;
+            continue;
+        }
+
+        // Are we capturing an alternate register name?
+        if (entry.key == "@rname")
+        {
+            rname = remaining_text(in);
             continue;
         }
 
@@ -458,6 +467,7 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
         {
             string   lparam_name  = parse_localparam_name(in);
             uint32_t lparam_value = parse_localparam_value(in);
+            if (rname != "") lparam_name = rname;
             string   reg_name = make_reg_name(lparam_name, prefix);
             uint32_t reg_addr = base_addr + (lparam_value * 4);
  

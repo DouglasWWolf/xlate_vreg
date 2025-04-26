@@ -375,7 +375,7 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
         }
 
 
-        // Are we adding a commen line to a field description?
+        // Are we adding a comment line to a field description?
         if (entry.key == "@fdesc")
         {
             entry.desc = remaining_text(in);

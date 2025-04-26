@@ -19,6 +19,16 @@ struct entry_t
     string  type;
     string  reset;
     string  desc;
+    void clear()
+    {
+        key   = "";
+        name  = "";
+        width = "";
+        pos   = "";
+        type  = "";
+        reset = "";
+        desc  = "";
+    }
 };
 
 vector<entry_t> definition;
@@ -94,9 +104,29 @@ static const char* skip_whitespace(const char* p)
 //                    buffer
 //=============================================================================
 static string remaining_text(const char* p)
-{
+{   
+    char buffer[8192];
+
+    // Skip leading whitespace from the remaining text
     p = skip_whitespace(p);
-    return p;
+    
+    // Copy the remaining text into our local buffer
+    strcpy(buffer, p);
+    
+    // Point to the terminating null in the buffer
+    char* lp = strchr(buffer, 0);
+
+    // Trim trailing whitespace from the buffer
+    while (lp > buffer)
+    {
+        char c = *--lp;
+        if (c == 32 || c == 9)
+            *lp = 0;
+        else
+            break;
+    }
+    
+    return buffer;
 }
 //=============================================================================
 
@@ -194,6 +224,13 @@ static void write_register_documentation(FILE* ofile, string register_name)
 
         if (e.key == "@register")
         {
+            if (e.width == "" || e.width == "32")
+                fprintf(ofile, "// Size:        32-bits\n");
+            else if (e.width == "64")
+                fprintf(ofile, "// Size:        64-bits\n");
+            else
+                fprintf(ofile, "// Size:        %s\n", e.width.c_str());
+
             fprintf(ofile,  "// Description: %s\n", e.desc.c_str());
             continue;
         }
@@ -369,6 +406,9 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
         if (in[0] == '/' && in[1] == '*') continue;
         if (in[0] == '*' && in[1] == '/') continue;
 
+        // Make sure all the fields of our entry are empty
+        entry.clear();
+
         // Fetch the first token on the line
         in = get_next_token(in, &entry.key);
         
@@ -381,6 +421,12 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
             continue;
         }
 
+        // Are we modifying the previous "@register" by altering the width?
+        if (entry.key == "@rsize" && definition.size() > 0)
+        {
+            definition[definition.size()-1].width = remaining_text(in);
+            continue;
+        }
 
         // Are we adding a comment line to a register or field description?
         if (entry.key == "@fdesc" || entry.key == "@rdesc")

@@ -391,6 +391,7 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
 {
     entry_t entry;
     char    buffer[1000];
+    int     register_index = -1;
 
     // Loop through each line of the input
     while (fgets(buffer, sizeof buffer, ifile))
@@ -419,13 +420,14 @@ void parse_verilog_regs(FILE* ifile, uint32_t base_addr, string prefix, FILE* of
             definition.clear();
             entry.desc = remaining_text(in);
             definition.push_back(entry);
+            register_index = definition.size() - 1;
             continue;
         }
 
         // Are we modifying the previous "@register" by altering the width?
-        if (entry.key == "@rsize" && definition.size() > 0)
+        if (entry.key == "@rsize" && register_index >= 0)
         {
-            definition[definition.size()-1].width = remaining_text(in);
+            definition[register_index].width = remaining_text(in);
             continue;
         }
 

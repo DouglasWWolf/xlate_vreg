@@ -248,6 +248,7 @@ static void write_register_documentation(FILE* ofile, string register_name)
 
             if (field_count++ == 0)
             {
+                fprintf(ofile, "//\n");
                 fprintf(ofile, "// Fields:\n");
                 fprintf(ofile, "//     NAME                           WID   POS TYPE RESET       DESCRIPTION\n");
             }            
